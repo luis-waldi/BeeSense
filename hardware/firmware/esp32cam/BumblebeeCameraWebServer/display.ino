@@ -1,9 +1,10 @@
-// Temperature and Humidity Display
+// Temperature, Humidity and UV Display
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_HDC1000.h>
+#include <Adafruit_VEML6070.h>
 
 #define PIN_QWIIC_SDA 2
 #define PIN_QWIIC_SCL 1
@@ -14,6 +15,7 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 Adafruit_HDC1000 hdc = Adafruit_HDC1000();
+Adafruit_VEML6070 uv = Adafruit_VEML6070();
 
 void displaySensorData() {
   display.clearDisplay();
@@ -21,28 +23,61 @@ void displaySensorData() {
   // Read sensor data
   float temp = hdc.readTemperature();
   float humi = hdc.readHumidity();
+  uint16_t uvLevel = uv.readUV();
+  float uvIndex = uvLevel / 100.0;
   
   // Display title
   display.setTextSize(1);
   display.setTextColor(WHITE, BLACK);
   display.setCursor(0, 0);
-  display.println("BeeSense Sensor");
+  display.println("BeeSense Monitor");
   
   // Draw separator line
-  display.drawLine(0, 10, SCREEN_WIDTH, 10, WHITE);
+  display.drawLine(0, 9, SCREEN_WIDTH, 9, WHITE);
   
-  // Display temperature
+  // Display temperature (left side)
+  display.setTextSize(1);
+  display.setCursor(0, 14);
+  display.print("Temp:");
   display.setTextSize(2);
-  display.setCursor(0, 18);
-  display.print("T: ");
+  display.setCursor(0, 24);
   display.print(temp, 1);
-  display.println(" C");
+  display.print("C");
   
-  // Display humidity
-  display.setCursor(0, 40);
-  display.print("H: ");
-  display.print(humi, 1);
-  display.println(" %");
+  // Display humidity (right side)
+  display.setTextSize(1);
+  display.setCursor(70, 14);
+  display.print("Hum:");
+  display.setTextSize(2);
+  display.setCursor(70, 24);
+  display.print(humi, 0);
+  display.print("%");
+  
+  // Draw separator line
+  display.drawLine(0, 42, SCREEN_WIDTH, 42, WHITE);
+  
+// Display UV raw value
+display.setTextSize(1);
+display.setCursor(0, 46);
+display.print("UV: ");
+display.print(uvLevel);
+
+// Display UV Index and level indicator
+display.setCursor(0, 56);
+display.print("Idx:");
+display.print(uvIndex, 1);
+display.print(" ");
+if (uvIndex < 3) {
+    display.print("Low");
+} else if (uvIndex < 6) {
+    display.print("Mod");
+} else if (uvIndex < 8) {
+    display.print("High");
+} else if (uvIndex < 11) {
+    display.print("V.High");
+} else {
+    display.print("Extr");
+}
   
   display.display();
 }
@@ -61,12 +96,18 @@ void setup() {
   // Initialize HDC1000 sensor
   hdc.begin();
   
+  // Initialize VEML6070 UV sensor
+  uv.begin(VEML6070_4_T);
+  
   // Show startup message
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
   display.println("BeeSense");
   display.println("Initializing...");
+  display.println("");
+  display.println("Temp/Hum: OK");
+  display.println("UV Sensor: OK");
   display.display();
   delay(2000);
 }
@@ -76,11 +117,20 @@ void loop() {
   displaySensorData();
   
   // Also print to Serial for debugging
-  Serial.print("Temperature: ");
-  Serial.print(hdc.readTemperature());
-  Serial.print(" °C, Humidity: ");
-  Serial.print(hdc.readHumidity());
-  Serial.println(" %");
+  float temp = hdc.readTemperature();
+  float humi = hdc.readHumidity();
+  uint16_t uvLevel = uv.readUV();
+  float uvIndex = uvLevel / 100.0;
+  
+  Serial.print("Temp: ");
+  Serial.print(temp, 1);
+  Serial.print("°C | Hum: ");
+  Serial.print(humi, 1);
+  Serial.print("% | UV: ");
+  Serial.print(uvLevel);
+  Serial.print(" (Index: ");
+  Serial.print(uvIndex, 1);
+  Serial.println(")");
   
   // Update every 2 seconds
   delay(2000);
