@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hummelstock Dashboard (PC-Simulation)</title>
+  <title>BeeSense</title>
 
   <!-- CSS -->
   <link rel="stylesheet" href="style.css">
@@ -25,9 +25,15 @@
   ></script>
 </head>
 <body>
-  <h1>Hummelstock Dashboard</h1>
+  <!-- Firmenlogo -->
+  <div class="header-logo header-logo-right">
+    <img src="assets/LogoBiene.png" alt="Insecta Systems Logo">
+  </div>
+  
+
+  <h1>BeeSense </h1>
   <div class="subtitle">
-    PC-Simulation ohne ESP32 – Flüge, Temperatur und Luftfeuchtigkeit.
+    Dein Smarter Bienenstock
   </div>
 
   <!-- Navigation / Reiter -->
@@ -181,6 +187,13 @@
       <p class="placeholder">
         Hier kannst du zukünftig Parameter, Warnschwellen, Sensoroptionen usw. einstellen.
       </p>
+
+      <div class="small" style="margin-top: 10px;">
+        Darstellung:
+      </div>
+      <button id="theme-toggle" class="theme-toggle">
+        🌙 Dunkles Design aktivieren
+      </button>
     </div>
   </div>
 
@@ -215,6 +228,36 @@
         }
       });
     });
+
+    // ---------------------------------------
+    // Theme Toggle (Hell/Dunkel) in Einstellungen
+    // ---------------------------------------
+    const themeToggleBtn = document.getElementById("theme-toggle");
+
+    function applyTheme(theme) {
+      if (theme === "dark") {
+        document.body.classList.add("theme-dark");
+        if (themeToggleBtn) {
+          themeToggleBtn.textContent = "☀️ Helles Design aktivieren";
+        }
+      } else {
+        document.body.classList.remove("theme-dark");
+        if (themeToggleBtn) {
+          themeToggleBtn.textContent = "🌙 Dunkles Design aktivieren";
+        }
+      }
+      localStorage.setItem("beeTheme", theme);
+    }
+
+    const savedTheme = localStorage.getItem("beeTheme") || "light";
+    applyTheme(savedTheme);
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        const isDark = document.body.classList.contains("theme-dark");
+        applyTheme(isDark ? "light" : "dark");
+      });
+    }
 
     // ---------------------------------------
     // Simulationsdaten (heute)
@@ -385,7 +428,3 @@
   </script>
 </body>
 </html>
-
-
-
-

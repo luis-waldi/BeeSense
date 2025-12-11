@@ -1,219 +1,359 @@
 * {
-    box-sizing: border-box;
-  }
-  
-  /* Farbpalette */
-  :root {
-    --color-yellow:  #F5D847;  /* Flüge */
-    --color-lime:    #C6F542;  /* Standort / Akzent */
-    --color-pale:    #F5E584;  /* Standardkarte */
-    --color-orange:  #F5BA27;  /* Temperatur */
-    --color-green:   #98F571;  /* Feuchtigkeit */
-  
-    --text-primary:   #222;
-    --text-secondary: #555;
-  }
-  
-  /* Grundlayout */
-  body {
-    font-family: Arial, sans-serif;
-    background: #f5f7fa;
-    padding: 20px;
-    margin: 0;
-    color: var(--text-primary);
-  }
-  
-  h1,
-  h2 {
-    color: var(--text-primary);
-  }
-  
-  .subtitle {
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-    font-size: 0.9rem;
-  }
-  
-  /* Navigation */
-  .nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 18px;
-  }
-  
-  .nav button {
-    border: none;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: var(--color-yellow);
-    color: var(--text-primary);
-    cursor: pointer;
-  }
-  
-  .nav button.active {
-    background: var(--color-green);
-    color: var(--text-primary);
-    font-weight: bold;
-  }
-  
-  /* Content Views */
-  .view {
-    display: none;
-  }
-  .view.active {
-    display: block;
-  }
-  
-  /* Karten – Basis */
-  .card {
-    background: var(--color-pale);
-    color: var(--text-primary);
-    padding: 18px 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-  }
-  
-  /* Karten – Varianten nach Bereich */
-  .card-flight {
-    background: var(--color-yellow);
-  }
-  
-  .card-temp {
-    background: var(--color-orange);
-  }
-  
-  .card-humidity {
-    background: var(--color-green);
-  }
-  
-  .card-location {
-    background: var(--color-lime);
-  }
-  
-  .card-settings {
-    background: var(--color-pale);
-  }
-  
-  /* Grid-Layouts */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-  }
-  
+  box-sizing: border-box;
+}
+
+/* Farbpalette – an Folie orientiert (HELL) */
+:root {
+  --bg-paper:      #f5ecdd;  /* Papierhintergrund */
+  --honey-dark:    #c58c35;  /* dunkler Honig / Akzent */
+  --honey-mid:     #e2b566;  /* mittleres Honiggelb */
+  --honey-light:   #f7e1ba;  /* sehr helles Honiggelb für Flächen */
+  --honey-soft:    #f9eed4;  /* Kartenhintergrund / sehr dezent */
+
+  --text-primary:   #2b2b2b;
+  --text-secondary: #5f5f5f;
+}
+
+/* Grundlayout */
+body {
+  font-family: Arial, sans-serif;
+  background: var(--bg-paper);
+  padding: 20px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+h1,
+h2 {
+  color: var(--text-primary);
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+/* Firmenlogo */
+.header-logo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Logo rechts oben */
+.header-logo-right {
+  justify-content: flex-end;     /* rechtsbündig */
+  margin-bottom: 10px;
+}
+
+.header-logo img {
+  height: 8vh;
+  width: auto;
+  opacity: 0.9;
+  mix-blend-mode: multiply;
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.nav button {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--honey-mid);   /* warmes Gelb wie in der Folie */
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.nav button.active {
+  background: var(--honey-dark);
+  color: #fffdf5;
+  font-weight: bold;
+}
+
+/* Content Views */
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+
+/* Karten – Basis */
+.card {
+  background: var(--honey-soft);  /* sehr dezente, helle Karte */
+  color: var(--text-primary);
+  padding: 18px 20px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+/* dünner Akzentstreifen oben – erinnert an die Waben */
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--honey-mid);
+}
+
+/* Karten – Varianten nach Bereich (nur Akzentfarbe ändern) */
+.card-flight::before {
+  background: var(--honey-dark);
+}
+
+.card-temp::before {
+  background: #d8892c;  /* etwas orangeiger Akzent */
+}
+
+.card-humidity::before {
+  background: #b99a4a;  /* leicht abweichender Honigton */
+}
+
+.card-location::before {
+  background: #a8772d;  /* etwas kräftiger für Standort */
+}
+
+.card-settings::before {
+  background: var(--honey-mid);
+}
+
+/* Grid-Layouts */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.flights-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 800px) {
   .flights-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: 1fr;
   }
-  
-  @media (max-width: 800px) {
-    .flights-layout {
-      grid-template-columns: 1fr;
-    }
-  }
-  
-  /* Standort-Layout (Text links, Karte rechts) */
+}
+
+/* Standort-Layout (Text links, Karte rechts) */
+.location-layout {
+  display: grid;
+  grid-template-columns: 1fr 2fr; /* links Text, rechts Karte */
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
   .location-layout {
-    display: grid;
-    grid-template-columns: 1fr 2fr; /* links Text, rechts Karte */
-    gap: 20px;
-    align-items: start;
+    grid-template-columns: 1fr; /* untereinander auf kleinen Screens */
   }
-  
-  @media (max-width: 900px) {
-    .location-layout {
-      grid-template-columns: 1fr; /* untereinander auf kleinen Screens */
-    }
-  }
-  
-  /* Werte & Texte */
-  .value-row {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
-  
-  .value {
-    font-size: 2.4rem;
-    font-weight: bold;
-  }
-  
-  .unit {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-  }
-  
-  .small {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-  }
-  
-  .status-ok {
-    color: #2e7d32;
-  }
-  .status-warn {
-    color: #e65100;
-  }
-  
-  .placeholder {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-  }
-  
-  /* Diagramme */
-  .chart-container {
-    width: 100%;
-    height: 220px; /* kompakte Höhe */
-    position: relative;
-  }
-  
-  /* Standort / Karte */
-  .map-container {
-    width: 100%;
-    height: 350px;     /* größere Standardhöhe */
-    min-height: 250px; /* Mindestgröße */
-    max-height: 500px; /* maximale Höhe */
-    border-radius: 12px;
-    overflow: hidden;
-    margin-top: 10px;
-    resize: vertical;  /* Karte per Maus höhenverstellbar */
-  }
-  
-  .location-coords {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin-top: 4px;
-  }
-  
-  /* Standort Formular */
-  .location-form {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-  
-  .location-form label {
-    font-size: 0.85rem;
-  }
-  
-  .location-form input {
-    max-width: 160px;
-    padding: 4px 6px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-  
-  .location-form button {
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: none;
-    cursor: pointer;
-    background: var(--color-green);
-    color: var(--text-primary);
-    font-size: 0.85rem;
-  }
+}
+
+/* Werte & Texte */
+.value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.value {
+  font-size: 2.4rem;
+  font-weight: bold;
+}
+
+.unit {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.small {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.status-ok {
+  color: #2e7d32;
+}
+.status-warn {
+  color: #e65100;
+}
+
+.placeholder {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Diagramme */
+.chart-container {
+  width: 100%;
+  height: 220px; /* kompakte Höhe */
+  position: relative;
+}
+
+/* Standort / Karte */
+.map-container {
+  width: 100%;
+  height: 350px;
+  min-height: 250px;
+  max-height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 10px;
+  resize: vertical;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.location-coords {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Standort Formular */
+.location-form {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.location-form label {
+  font-size: 0.85rem;
+}
+
+.location-form input {
+  max-width: 160px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #c9b89a;
+  background: #fffdf7;
+  color: var(--text-primary);
+}
+
+.location-form button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: var(--honey-dark);
+  color: #fffdf5;
+  font-size: 0.85rem;
+}
+
+/* Theme-Toggle in den Einstellungen */
+.theme-toggle {
+  margin-top: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: var(--honey-mid);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+
+/*        DARK THEME         */
+
+body.theme-dark {
+  background: #202123;
+  color: #e5e7eb;
+}
+
+body.theme-dark h1,
+body.theme-dark h2 {
+  color: #e5e7eb;
+}
+
+body.theme-dark .subtitle {
+  color: #9ca3af;
+}
+
+/* Logo leicht abdunkeln */
+body.theme-dark .header-logo img {
+  opacity: 0.95;
+  mix-blend-mode: normal;
+}
+
+/* Navigation im Dark Mode */
+body.theme-dark .nav button {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+body.theme-dark .nav button.active {
+  background: #f5d847;  /* sattes Hummel-Gelb als Akzent */
+  color: #111827;
+}
+
+/* Karten im Dark Mode */
+body.theme-dark .card {
+  background: #26272b;
+  color: #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  border-color: #111827;
+}
+
+/* Akzentstreifen im Dark Mode */
+body.theme-dark .card::before {
+  background: #4b5563;
+}
+
+body.theme-dark .card-flight::before {
+  background: #f5d847;
+}
+
+body.theme-dark .card-temp::before {
+  background: #f59e0b;
+}
+
+body.theme-dark .card-humidity::before {
+  background: #22c55e;
+}
+
+body.theme-dark .card-location::before {
+  background: #4ade80;
+}
+
+/* Texte sekundär */
+body.theme-dark .unit,
+body.theme-dark .small,
+body.theme-dark .placeholder,
+body.theme-dark .location-coords {
+  color: #9ca3af;
+}
+
+/* Formular im Dark Mode */
+body.theme-dark .location-form input {
+  background: #111827;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+body.theme-dark .location-form button {
+  background: #f5d847;
+  color: #111827;
+}
+
+/* Theme-Button im Dark Mode */
+body.theme-dark .theme-toggle {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+
   
