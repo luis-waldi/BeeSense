@@ -30,8 +30,8 @@
 static const char *TAG = "APP";
 
 // WiFi credentials
-#define WIFI_SSID "FRITZ!Box 7560 LC GB"
-#define WIFI_PASS "48991416100471872244"
+#define WIFI_SSID "-"
+#define WIFI_PASS "-"
 
 // HTTP server handles
 static httpd_handle_t camera_httpd = NULL;
