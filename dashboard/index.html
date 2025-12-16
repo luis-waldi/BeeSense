@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hummelstock Dashboard (PC-Simulation)</title>
+  <title>BeeSense</title>
 
   <!-- CSS -->
   <link rel="stylesheet" href="style.css">
@@ -24,16 +24,15 @@
     crossorigin=""
   ></script>
 </head>
+
 <body>
   <!-- Firmenlogo (rechts oben) -->
   <div class="header-logo header-logo-right">
-    <img src="assets/insecta-logo.png" alt="Insecta Systems Logo">
+    <img src="assets/LogoBiene.png" alt="Insecta Systems Logo">
   </div>
 
-  <h1>Hummelstock Dashboard</h1>
-  <div class="subtitle">
-    PC-Simulation ohne ESP32 – Flüge, Temperatur und Luftfeuchtigkeit.
-  </div>
+  <h1>BeeSense</h1>
+  <div class="subtitle">Dein smarter Bienenstock</div>
 
   <!-- Navigation / Reiter -->
   <div class="nav">
@@ -54,7 +53,7 @@
           <div id="flights" class="value">0</div>
           <div class="unit">Flüge</div>
         </div>
-        <div class="small" id="flights-info">simulierte Zählung</div>
+        <div class="small" id="flights-info">Zählung</div>
       </div>
 
       <div class="card card-temp">
@@ -86,19 +85,15 @@
           <div id="flights-detail" class="value">0</div>
           <div class="unit">Flüge</div>
         </div>
-        <div class="small">
-          Heutige Flüge (laufende Zählung).
-        </div>
+        <div class="small">Heutige Flüge</div>
       </div>
 
       <div class="card card-flight">
-        <h2>Flüge der letzten 7 Tage (ohne heute)</h2>
+        <h2>Flüge der letzten 7 Tage</h2>
         <div class="chart-container">
           <canvas id="flightsChart"></canvas>
         </div>
-        <div class="small">
-          Simulierte Flugdaten der letzten 7 Tage.
-        </div>
+        <div class="small">Flugdaten der letzten 7 Tage</div>
       </div>
     </div>
   </div>
@@ -112,19 +107,15 @@
           <div id="temperature-detail" class="value">--</div>
           <div class="unit">°C</div>
         </div>
-        <div class="small">
-          Momentane Temperatur im Hummelstock (simuliert).
-        </div>
+        <div class="small">Momentane Temperatur im Hummelstock</div>
       </div>
 
       <div class="card card-temp">
-        <h2>Temperatur der letzten 7 Tage (Ø, ohne heute)</h2>
+        <h2>Temperatur der letzten 7 Tage (Ø)</h2>
         <div class="chart-container">
           <canvas id="tempChart"></canvas>
         </div>
-        <div class="small">
-          Durchschnittliche Temperatur pro Tag für die letzten 7 Tage vor heute.
-        </div>
+        <div class="small">Durchschnittliche Temperatur pro Tag für die letzten 7 Tage</div>
       </div>
     </div>
   </div>
@@ -142,66 +133,63 @@
       </div>
 
       <div class="card card-humidity">
-        <h2>Luftfeuchtigkeit der letzten 7 Tage (Ø, ohne heute)</h2>
+        <h2>Luftfeuchtigkeit der letzten 7 Tage (Ø)</h2>
         <div class="chart-container">
           <canvas id="humChart"></canvas>
         </div>
-        <div class="small">
-          Durchschnittliche Luftfeuchtigkeit pro Tag für die letzten 7 Tage vor heute.
+        <div class="small">Durchschnittliche Luftfeuchtigkeit pro Tag für die letzten 7 Tage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ansicht: Standort -->
+  <div id="view-location" class="view">
+    <div class="card card-location">
+      <h2>Standorte der Stöcke</h2>
+
+      <div class="location-layout">
+        <!-- linke Seite -->
+        <div>
+          <p class="location-coords">
+            Hier kann der Imker bis zu <strong>5 Stöcke</strong> (Name + Koordinaten) speichern und auf der Karte anzeigen lassen.
+          </p>
+
+          <form class="location-form" onsubmit="return false;">
+            <label>
+              Name (z.B. Bienenstock1):<br />
+              <input type="text" id="input-name" placeholder="z.B. Bienenstock1" maxlength="30" />
+            </label>
+
+            <label>
+              Breite (Lat):<br />
+              <input type="number" step="0.0001" id="input-lat" placeholder="z.B. 52.5200" />
+            </label>
+
+            <label>
+              Länge (Lng):<br />
+              <input type="number" step="0.0001" id="input-lng" placeholder="z.B. 13.4050" />
+            </label>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button id="btn-save-stock" type="button">Speichern</button>
+              <button id="btn-show-current" type="button">Anzeigen</button>
+              <button id="btn-clear-stocks" type="button">Alle löschen</button>
+            </div>
+
+            <div class="small" id="stock-msg" style="margin-top:6px;">–</div>
+          </form>
+
+          <h3 style="margin-top:14px; margin-bottom:6px;">Gespeicherte Stöcke</h3>
+          <div id="stocks-list" class="stocks-list"></div>
+        </div>
+
+        <!-- rechte Seite: Karte -->
+        <div>
+          <div id="map" class="map-container"></div>
         </div>
       </div>
     </div>
   </div>
-
-<!-- Ansicht: Standort -->
-<div id="view-location" class="view">
-  <div class="card card-location">
-    <h2>Standorte der Stöcke</h2>
-
-    <div class="location-layout">
-      <!-- linke Seite -->
-      <div>
-        <p class="location-coords">
-          Hier kann der Imker bis zu <strong>5 Stöcke</strong> (Name + Koordinaten) speichern und auf der Karte anzeigen lassen.
-        </p>
-
-        <form class="location-form" onsubmit="return false;">
-          <label>
-            Name (z.B. Bienenstock1):<br />
-            <input type="text" id="input-name" placeholder="z.B. Bienenstock1" maxlength="30" />
-          </label>
-
-          <label>
-            Breite (Lat):<br />
-            <input type="number" step="0.0001" id="input-lat" placeholder="z.B. 52.5200" />
-          </label>
-
-          <label>
-            Länge (Lng):<br />
-            <input type="number" step="0.0001" id="input-lng" placeholder="z.B. 13.4050" />
-          </label>
-
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button id="btn-save-stock" type="button">Speichern</button>
-            <button id="btn-show-current" type="button">Anzeigen</button>
-            <button id="btn-clear-stocks" type="button">Alle löschen</button>
-          </div>
-
-          <div class="small" id="stock-msg" style="margin-top:6px;">–</div>
-        </form>
-
-        <h3 style="margin-top:14px; margin-bottom:6px;">Gespeicherte Stöcke</h3>
-        <div id="stocks-list" class="stocks-list"></div>
-      </div>
-
-      <!-- rechte Seite: Karte -->
-      <div>
-        <div id="map" class="map-container"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 
   <!-- Ansicht: Einstellungen -->
   <div id="view-settings" class="view">
@@ -211,12 +199,8 @@
         Hier kannst du zukünftig Parameter, Warnschwellen, Sensoroptionen usw. einstellen.
       </p>
 
-      <div class="small" style="margin-top: 10px;">
-        Darstellung:
-      </div>
-      <button id="theme-toggle" class="theme-toggle">
-        Dunkles Design
-      </button>
+      <div class="small" style="margin-top: 10px;">Darstellung:</div>
+      <button id="theme-toggle" class="theme-toggle">Dunkles Design</button>
     </div>
   </div>
 
@@ -239,6 +223,7 @@
     navButtons.forEach(btn => {
       btn.addEventListener("click", () => {
         const target = btn.dataset.view;
+
         navButtons.forEach(b => b.classList.toggle("active", b === btn));
         Object.entries(views).forEach(([name, el]) => {
           el.classList.toggle("active", name === target);
@@ -258,10 +243,10 @@
     function applyTheme(theme) {
       if (theme === "dark") {
         document.body.classList.add("theme-dark");
-        if (themeToggleBtn) themeToggleBtn.textContent = "Helles Design ";
+        if (themeToggleBtn) themeToggleBtn.textContent = "Helles Design";
       } else {
         document.body.classList.remove("theme-dark");
-        if (themeToggleBtn) themeToggleBtn.textContent = " Dunkles Design ";
+        if (themeToggleBtn) themeToggleBtn.textContent = "Dunkles Design";
       }
       localStorage.setItem("beeTheme", theme);
     }
@@ -294,13 +279,14 @@
     for (let i = 7; i >= 1; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
+
       labelsLast7.push(
         d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })
       );
 
-      flightsLast7.push(80 + Math.floor(Math.random() * 100)); // 80–180
-      tempLast7.push(22 + Math.random() * 8);                  // 22–30 °C
-      humLast7.push(50 + Math.random() * 30);                  // 50–80 %
+      flightsLast7.push(80 + Math.floor(Math.random() * 100));
+      tempLast7.push(22 + Math.random() * 8);
+      humLast7.push(50 + Math.random() * 30);
     }
 
     // ---------------------------------------
@@ -312,10 +298,7 @@
       data: {
         labels: labelsLast7,
         datasets: [
-          {
-            label: "Flüge pro Tag",
-            data: flightsLast7,
-          },
+          { label: "Flüge pro Tag", data: flightsLast7 },
         ],
       },
       options: {
@@ -377,205 +360,204 @@
           y: {
             beginAtZero: false,
             suggestedMin: 30,
-            suggestedMax: 90
+            suggestedMax: 90,
           },
         },
       },
     });
 
     // ---------------------------------------
-// Leaflet-Karte & Stock-Verwaltung (bis zu 5)
-// ---------------------------------------
-const STOCKS_KEY = "beeStocks_v1";
-const MAX_STOCKS = 5;
+    // Leaflet-Karte & Stock-Verwaltung (bis zu 5)
+    // ---------------------------------------
+    const STOCKS_KEY = "beeStocks_v1";
+    const MAX_STOCKS = 5;
 
-// DOM
-const nameInput = document.getElementById("input-name");
-const latInputEl = document.getElementById("input-lat");
-const lngInputEl = document.getElementById("input-lng");
-const msgEl = document.getElementById("stock-msg");
-const listEl = document.getElementById("stocks-list");
+    const nameInput = document.getElementById("input-name");
+    const latInputEl = document.getElementById("input-lat");
+    const lngInputEl = document.getElementById("input-lng");
+    const msgEl = document.getElementById("stock-msg");
+    const listEl = document.getElementById("stocks-list");
 
-function setMsg(text) {
-  if (msgEl) msgEl.innerText = text;
-}
+    function setMsg(text) {
+      if (msgEl) msgEl.innerText = text;
+    }
 
-function loadStocks() {
-  try {
-    const raw = localStorage.getItem(STOCKS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+    function loadStocks() {
+      try {
+        const raw = localStorage.getItem(STOCKS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
 
-function saveStocks(stocks) {
-  localStorage.setItem(STOCKS_KEY, JSON.stringify(stocks));
-}
+    function saveStocks(stocks) {
+      localStorage.setItem(STOCKS_KEY, JSON.stringify(stocks));
+    }
 
-function normalizeName(name) {
-  return (name || "").trim().replace(/\s+/g, " ");
-}
+    function normalizeName(name) {
+      return (name || "").trim().replace(/\s+/g, " ");
+    }
 
-function isValidLatLng(lat, lng) {
-  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
-}
+    function isValidLatLng(lat, lng) {
+      return Number.isFinite(lat) && Number.isFinite(lng) &&
+        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+    }
 
-function upsertStock(stock) {
-  const stocks = loadStocks();
-  const idx = stocks.findIndex(s => s.name.toLowerCase() === stock.name.toLowerCase());
+    function upsertStock(stock) {
+      const stocks = loadStocks();
+      const idx = stocks.findIndex(s => s.name.toLowerCase() === stock.name.toLowerCase());
 
-  if (idx >= 0) {
-    stocks[idx] = stock; // update
-    saveStocks(stocks);
-    return { ok: true, msg: `„${stock.name}“ aktualisiert.` };
-  }
+      if (idx >= 0) {
+        stocks[idx] = stock;
+        saveStocks(stocks);
+        return { ok: true, msg: `„${stock.name}“ aktualisiert.` };
+      }
 
-  if (stocks.length >= MAX_STOCKS) {
-    return { ok: false, msg: `Maximal ${MAX_STOCKS} Stöcke erlaubt. Bitte erst einen löschen.` };
-  }
+      if (stocks.length >= MAX_STOCKS) {
+        return { ok: false, msg: `Maximal ${MAX_STOCKS} Stöcke erlaubt. Bitte erst einen löschen.` };
+      }
 
-  stocks.push(stock);
-  saveStocks(stocks);
-  return { ok: true, msg: `„${stock.name}“ gespeichert.` };
-}
+      stocks.push(stock);
+      saveStocks(stocks);
+      return { ok: true, msg: `„${stock.name}“ gespeichert.` };
+    }
 
-function deleteStockByName(name) {
-  const stocks = loadStocks().filter(s => s.name.toLowerCase() !== name.toLowerCase());
-  saveStocks(stocks);
-}
+    function deleteStockByName(name) {
+      const stocks = loadStocks().filter(s => s.name.toLowerCase() !== name.toLowerCase());
+      saveStocks(stocks);
+    }
 
-function clearAllStocks() {
-  localStorage.removeItem(STOCKS_KEY);
-}
+    function clearAllStocks() {
+      localStorage.removeItem(STOCKS_KEY);
+    }
 
-// Karte initialisieren (Start: erster gespeicherter Stock, sonst Berlin)
-const initialStocks = loadStocks();
-let currentLat = initialStocks[0]?.lat ?? 52.5200;
-let currentLng = initialStocks[0]?.lng ?? 13.4050;
+    // Karte initialisieren
+    const initialStocks = loadStocks();
+    let currentLat = initialStocks[0]?.lat ?? 52.5200;
+    let currentLng = initialStocks[0]?.lng ?? 13.4050;
 
-map = L.map("map").setView([currentLat, currentLng], 13);
+    map = L.map("map").setView([currentLat, currentLng], 13);
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19,
-  attribution: "© OpenStreetMap-Mitwirkende"
-}).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap-Mitwirkende"
+    }).addTo(map);
 
-const marker = L.marker([currentLat, currentLng])
-  .addTo(map)
-  .bindPopup("Stock-Standort")
-  .openPopup();
+    const marker = L.marker([currentLat, currentLng])
+      .addTo(map)
+      .bindPopup("Stock-Standort")
+      .openPopup();
 
-function showOnMap(lat, lng, popupText = "Stock-Standort") {
-  map.setView([lat, lng], 13);
-  marker.setLatLng([lat, lng]);
-  marker.bindPopup(popupText).openPopup();
-}
+    function showOnMap(lat, lng, popupText = "Stock-Standort") {
+      map.setView([lat, lng], 13);
+      marker.setLatLng([lat, lng]);
+      marker.bindPopup(popupText).openPopup();
+    }
 
-// Liste rendern
-function renderStocks() {
-  const stocks = loadStocks();
-  if (!listEl) return;
+    function renderStocks() {
+      const stocks = loadStocks();
+      if (!listEl) return;
 
-  if (stocks.length === 0) {
-    listEl.innerHTML = `<div class="small">Noch keine Stöcke gespeichert.</div>`;
-    return;
-  }
+      if (stocks.length === 0) {
+        listEl.innerHTML = `<div class="small">Noch keine Stöcke gespeichert.</div>`;
+        return;
+      }
 
-  listEl.innerHTML = "";
-  stocks.forEach(stock => {
-    const item = document.createElement("div");
-    item.className = "stock-item";
+      listEl.innerHTML = "";
 
-    const left = document.createElement("div");
-    left.innerHTML = `
-      <div class="stock-name">${stock.name}</div>
-      <div class="stock-meta">${stock.lat.toFixed(4)}, ${stock.lng.toFixed(4)}</div>
-    `;
+      stocks.forEach(stock => {
+        const item = document.createElement("div");
+        item.className = "stock-item";
 
-    const actions = document.createElement("div");
-    actions.className = "stock-actions";
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="stock-name">${stock.name}</div>
+          <div class="stock-meta">${stock.lat.toFixed(4)}, ${stock.lng.toFixed(4)}</div>
+        `;
 
-    const btnShow = document.createElement("button");
-    btnShow.className = "btn-show";
-    btnShow.type = "button";
-    btnShow.innerText = "Anzeigen";
-    btnShow.addEventListener("click", () => {
-      showOnMap(stock.lat, stock.lng, stock.name);
-      // Eingaben befüllen (praktisch zum Updaten)
-      if (nameInput) nameInput.value = stock.name;
-      if (latInputEl) latInputEl.value = stock.lat.toFixed(4);
-      if (lngInputEl) lngInputEl.value = stock.lng.toFixed(4);
-      setMsg(`„${stock.name}“ auf Karte angezeigt.`);
+        const actions = document.createElement("div");
+        actions.className = "stock-actions";
+
+        const btnShow = document.createElement("button");
+        btnShow.className = "btn-show";
+        btnShow.type = "button";
+        btnShow.innerText = "Anzeigen";
+        btnShow.addEventListener("click", () => {
+          showOnMap(stock.lat, stock.lng, stock.name);
+
+          if (nameInput) nameInput.value = stock.name;
+          if (latInputEl) latInputEl.value = stock.lat.toFixed(4);
+          if (lngInputEl) lngInputEl.value = stock.lng.toFixed(4);
+
+          setMsg(`„${stock.name}“ auf Karte angezeigt.`);
+        });
+
+        const btnDel = document.createElement("button");
+        btnDel.className = "btn-delete";
+        btnDel.type = "button";
+        btnDel.innerText = "Löschen";
+        btnDel.addEventListener("click", () => {
+          deleteStockByName(stock.name);
+          renderStocks();
+          setMsg(`„${stock.name}“ gelöscht.`);
+        });
+
+        actions.appendChild(btnShow);
+        actions.appendChild(btnDel);
+
+        item.appendChild(left);
+        item.appendChild(actions);
+        listEl.appendChild(item);
+      });
+    }
+
+    document.getElementById("btn-save-stock")?.addEventListener("click", () => {
+      const name = normalizeName(nameInput?.value);
+      const lat = parseFloat(latInputEl?.value);
+      const lng = parseFloat(lngInputEl?.value);
+
+      if (!name) {
+        setMsg("Bitte einen Namen eingeben (z.B. Bienenstock1).");
+        return;
+      }
+      if (!isValidLatLng(lat, lng)) {
+        setMsg("Bitte gültige Koordinaten eingeben (Lat: -90..90, Lng: -180..180).");
+        return;
+      }
+
+      const result = upsertStock({ name, lat, lng, updatedAt: Date.now() });
+      setMsg(result.msg);
+
+      if (result.ok) {
+        renderStocks();
+        showOnMap(lat, lng, name);
+      }
     });
 
-    const btnDel = document.createElement("button");
-    btnDel.className = "btn-delete";
-    btnDel.type = "button";
-    btnDel.innerText = "Löschen";
-    btnDel.addEventListener("click", () => {
-      deleteStockByName(stock.name);
+    document.getElementById("btn-show-current")?.addEventListener("click", () => {
+      const name = normalizeName(nameInput?.value) || "Stock-Standort";
+      const lat = parseFloat(latInputEl?.value);
+      const lng = parseFloat(lngInputEl?.value);
+
+      if (!isValidLatLng(lat, lng)) {
+        setMsg("Bitte gültige Koordinaten eingeben, um den Standort anzuzeigen.");
+        return;
+      }
+
+      showOnMap(lat, lng, name);
+      setMsg(`„${name}“ auf Karte angezeigt (nicht gespeichert).`);
+    });
+
+    document.getElementById("btn-clear-stocks")?.addEventListener("click", () => {
+      clearAllStocks();
       renderStocks();
-      setMsg(`„${stock.name}“ gelöscht.`);
+      setMsg("Alle gespeicherten Stöcke wurden gelöscht.");
     });
 
-    actions.appendChild(btnShow);
-    actions.appendChild(btnDel);
-
-    item.appendChild(left);
-    item.appendChild(actions);
-
-    listEl.appendChild(item);
-  });
-}
-
-// Buttons
-document.getElementById("btn-save-stock")?.addEventListener("click", () => {
-  const name = normalizeName(nameInput?.value);
-  const lat = parseFloat(latInputEl?.value);
-  const lng = parseFloat(lngInputEl?.value);
-
-  if (!name) {
-    setMsg("Bitte einen Namen eingeben (z.B. Bienenstock1).");
-    return;
-  }
-  if (!isValidLatLng(lat, lng)) {
-    setMsg("Bitte gültige Koordinaten eingeben (Lat: -90..90, Lng: -180..180).");
-    return;
-  }
-
-  const result = upsertStock({ name, lat, lng, updatedAt: Date.now() });
-  setMsg(result.msg);
-  if (result.ok) {
     renderStocks();
-    showOnMap(lat, lng, name);
-  }
-});
-
-document.getElementById("btn-show-current")?.addEventListener("click", () => {
-  const name = normalizeName(nameInput?.value) || "Stock-Standort";
-  const lat = parseFloat(latInputEl?.value);
-  const lng = parseFloat(lngInputEl?.value);
-
-  if (!isValidLatLng(lat, lng)) {
-    setMsg("Bitte gültige Koordinaten eingeben, um den Standort anzuzeigen.");
-    return;
-  }
-  showOnMap(lat, lng, name);
-  setMsg(`„${name}“ auf Karte angezeigt (nicht gespeichert).`);
-});
-
-document.getElementById("btn-clear-stocks")?.addEventListener("click", () => {
-  clearAllStocks();
-  renderStocks();
-  setMsg("Alle gespeicherten Stöcke wurden gelöscht.");
-});
-
-// Initial render
-renderStocks();
-setMsg("–");
-
+    setMsg("–");
 
     // ---------------------------------------
     // UI updaten (Simulation der aktuellen Werte)
