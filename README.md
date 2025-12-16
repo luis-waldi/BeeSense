@@ -40,7 +40,7 @@ Aktuell läuft das Dashboard **mit simulierten Testdaten**, um UI-Design und Log
 - aktuelle Temperatur
 - Liniendiagramm: Ø Temperatur der letzten 7 Tage (ohne heute)
 
-### ✔ Standort
+### Standort
 - Interaktive Karte (Leaflet)
 - Eingabe von Koordinaten durch den Imker
 - Speicherung im Browser (localStorage)
@@ -63,13 +63,13 @@ dashboard/
 │── README.md
 
 
-Das Dashboard wird **nicht** in das PlatformIO-Projekt eingebettet, sondern **parallel getrennt entwickelt**.
+Das Dashboard wird gerade noch nicht in das PlatformIO-Projekt eingebettet, sondern parallel getrennt entwickelt und später darauf gezogen.
 
 ---
 
 ## Zukunft: Anbindung an PlatformIO / ESP32 Firmware
 
-Das Dashboard wird später **nicht lokal simuliert**, sondern:
+Das Dashboard wird später:
 
 1. **über einen Webserver auf dem ESP32 bereitgestellt**  
 2. Daten über eine **REST-API oder WebSocket** vom ESP32 beziehen  
@@ -84,8 +84,6 @@ Das Dashboard wird später **nicht lokal simuliert**, sondern:
 - `/api/humidity/current`
 - `/api/humidity/history`
 - `/api/location`
-
-Diese API-Struktur wird später im `main` oder einem eigenen Backend-Branch definiert.
 
 ---
 

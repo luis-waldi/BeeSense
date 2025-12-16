@@ -355,5 +355,72 @@ body.theme-dark .theme-toggle {
   color: #e5e7eb;
 }
 
+.stocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.stock-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+body.theme-dark .stock-item {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.stock-name {
+  font-weight: bold;
+}
+
+.stock-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+body.theme-dark .stock-meta {
+  color: #9ca3af;
+}
+
+.stock-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.stock-actions button {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+.stock-actions .btn-show {
+  background: var(--honey-dark);
+  color: #fffdf5;
+}
+
+body.theme-dark .stock-actions .btn-show {
+  background: #f5d847;
+  color: #111827;
+}
+
+.stock-actions .btn-delete {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+body.theme-dark .stock-actions .btn-delete {
+  background: #374151;
+  color: #e5e7eb;
+}
 
   
