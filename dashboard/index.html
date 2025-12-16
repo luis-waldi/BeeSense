@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BeeSense</title>
+  <title>Hummelstock Dashboard (PC-Simulation)</title>
 
   <!-- CSS -->
   <link rel="stylesheet" href="style.css">
@@ -25,15 +25,14 @@
   ></script>
 </head>
 <body>
-  <!-- Firmenlogo -->
+  <!-- Firmenlogo (rechts oben) -->
   <div class="header-logo header-logo-right">
-    <img src="assets/LogoBiene.png" alt="Insecta Systems Logo">
+    <img src="assets/insecta-logo.png" alt="Insecta Systems Logo">
   </div>
-  
 
-  <h1>BeeSense </h1>
+  <h1>Hummelstock Dashboard</h1>
   <div class="subtitle">
-    Dein Smarter Bienenstock
+    PC-Simulation ohne ESP32 – Flüge, Temperatur und Luftfeuchtigkeit.
   </div>
 
   <!-- Navigation / Reiter -->
@@ -132,11 +131,25 @@
 
   <!-- Ansicht: Feuchtigkeit -->
   <div id="view-humidity" class="view">
-    <div class="card card-humidity">
-      <h2>Feuchtigkeit – Detailansicht</h2>
-      <p class="placeholder">
-        Hier kommen später Verlaufskurven und Schwellwertinformationen hin.
-      </p>
+    <div class="flights-layout">
+      <div class="card card-humidity">
+        <h2>Aktuelle Luftfeuchtigkeit</h2>
+        <div class="value-row">
+          <div id="humidity-detail" class="value">--</div>
+          <div class="unit">%</div>
+        </div>
+        <div class="small" id="hum-status-detail">–</div>
+      </div>
+
+      <div class="card card-humidity">
+        <h2>Luftfeuchtigkeit der letzten 7 Tage (Ø, ohne heute)</h2>
+        <div class="chart-container">
+          <canvas id="humChart"></canvas>
+        </div>
+        <div class="small">
+          Durchschnittliche Luftfeuchtigkeit pro Tag für die letzten 7 Tage vor heute.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -222,9 +235,7 @@
         });
 
         if (target === "location" && map) {
-          setTimeout(() => {
-            map.invalidateSize();
-          }, 100);
+          setTimeout(() => map.invalidateSize(), 100);
         }
       });
     });
@@ -237,14 +248,10 @@
     function applyTheme(theme) {
       if (theme === "dark") {
         document.body.classList.add("theme-dark");
-        if (themeToggleBtn) {
-          themeToggleBtn.textContent = "☀️ Helles Design aktivieren";
-        }
+        if (themeToggleBtn) themeToggleBtn.textContent = "☀️ Helles Design aktivieren";
       } else {
         document.body.classList.remove("theme-dark");
-        if (themeToggleBtn) {
-          themeToggleBtn.textContent = "🌙 Dunkles Design aktivieren";
-        }
+        if (themeToggleBtn) themeToggleBtn.textContent = "🌙 Dunkles Design aktivieren";
       }
       localStorage.setItem("beeTheme", theme);
     }
@@ -272,6 +279,7 @@
     let labelsLast7 = [];
     let flightsLast7 = [];
     let tempLast7 = [];
+    let humLast7 = [];
 
     for (let i = 7; i >= 1; i--) {
       const d = new Date();
@@ -282,6 +290,7 @@
 
       flightsLast7.push(80 + Math.floor(Math.random() * 100)); // 80–180
       tempLast7.push(22 + Math.random() * 8);                  // 22–30 °C
+      humLast7.push(50 + Math.random() * 30);                  // 50–80 %
     }
 
     // ---------------------------------------
@@ -329,8 +338,36 @@
         responsive: true,
         maintainAspectRatio: false,
         scales: {
+          y: { beginAtZero: false },
+        },
+      },
+    });
+
+    // ---------------------------------------
+    // Diagramm Luftfeuchtigkeit (Linie)
+    // ---------------------------------------
+    const ctxHum = document.getElementById("humChart").getContext("2d");
+    const humChart = new Chart(ctxHum, {
+      type: "line",
+      data: {
+        labels: labelsLast7,
+        datasets: [
+          {
+            label: "Ø Luftfeuchtigkeit pro Tag (%)",
+            data: humLast7,
+            tension: 0.3,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
           y: {
             beginAtZero: false,
+            suggestedMin: 30,
+            suggestedMax: 90
           },
         },
       },
@@ -397,13 +434,19 @@
       if (hum < 30) hum = 30;
       if (hum > 90) hum = 90;
 
+      // Übersicht
       document.getElementById("flights").innerText = flights;
       document.getElementById("temperature").innerText = temp.toFixed(1);
       document.getElementById("humidity").innerText = hum.toFixed(1);
 
+      // Detailseiten
       document.getElementById("flights-detail").innerText = flights;
       document.getElementById("temperature-detail").innerText = temp.toFixed(1);
 
+      const humidityDetail = document.getElementById("humidity-detail");
+      if (humidityDetail) humidityDetail.innerText = hum.toFixed(1);
+
+      // Status Temperatur
       const tempStatus = document.getElementById("temp-status");
       if (temp >= 24 && temp <= 32) {
         tempStatus.innerText = "Temperatur im guten Bereich";
@@ -413,6 +456,7 @@
         tempStatus.className = "small status-warn";
       }
 
+      // Status Luftfeuchtigkeit
       const humStatus = document.getElementById("hum-status");
       if (hum >= 50 && hum <= 80) {
         humStatus.innerText = "Luftfeuchtigkeit im guten Bereich";
@@ -420,6 +464,13 @@
       } else {
         humStatus.innerText = "Luftfeuchtigkeit außerhalb Optimalbereich";
         humStatus.className = "small status-warn";
+      }
+
+      // Status in Detailseite übernehmen
+      const humStatusDetailEl = document.getElementById("hum-status-detail");
+      if (humStatus && humStatusDetailEl) {
+        humStatusDetailEl.innerText = humStatus.innerText;
+        humStatusDetailEl.className = humStatus.className;
       }
     }
 

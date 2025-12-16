@@ -25,18 +25,18 @@ Aktuell läuft das Dashboard **mit simulierten Testdaten**, um UI-Design und Log
 
 ## Aktuelle Funktionen
 
-### ✔ Übersicht
+### Übersicht
 - Live-Simulation von:
   - Flügen
   - Temperatur
   - Luftfeuchtigkeit
 - Ampelstatus für Temperatur/Feuchtigkeit
 
-### ✔ Flüge
+### Flüge
 - Tagesflüge
 - Balkendiagramm der letzten 7 Tage (ohne heutigen Tag)
 
-### ✔ Temperatur
+### Temperatur
 - aktuelle Temperatur
 - Liniendiagramm: Ø Temperatur der letzten 7 Tage (ohne heute)
 
@@ -46,17 +46,21 @@ Aktuell läuft das Dashboard **mit simulierten Testdaten**, um UI-Design und Log
 - Speicherung im Browser (localStorage)
 - Rechtskarte höhenverstellbar
 
-### ✔ Navigation
+### Navigation
 - Reiterstruktur (Tabs) für saubere Übersicht
 
 ---
 
-## 🛠 Projektstruktur
+## Projektstruktur
 dashboard/
+
 │── index.html → Hauptdatei (UI, Charts, Karte, Simulation)
+
 │── style.css → Farbschema, Layout, Kartenfarben
+
 │── assets/ (optional)
-│── README.md → Diese Datei
+
+│── README.md
 
 
 Das Dashboard wird **nicht** in das PlatformIO-Projekt eingebettet, sondern **parallel getrennt entwickelt**.
