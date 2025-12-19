@@ -48,6 +48,43 @@ def load_calibration_data(calib_dir: str, batch_size: int = 32):
     return calibration_data
 
 
+def replace_swish_with_relu(onnx_path, output_path=None):
+    """
+    Ersetzt alle Swish/SiLU-Aktivierungen im ONNX-Modell durch ReLU.
+    Speichert das neue Modell unter output_path (oder überschreibt onnx_path).
+    """
+    import onnx
+    from onnx import helper
+    model = onnx.load(onnx_path)
+    replaced = 0
+    for node in model.graph.node:
+        # Ersetze SiLU/Swish direkt
+        if node.op_type in ["Swish", "SiLU"]:
+            node.op_type = "Relu"
+            node.input[:] = node.input[:1]  # ReLU hat nur 1 Input
+            replaced += 1
+        # Ersetze zusammengesetzte Swish (Mul mit Sigmoid)
+    # Suche nach Mul-Knoten, deren Inputs ein Sigmoid ist
+    for node in model.graph.node:
+        if node.op_type == "Mul":
+            sig_in = None
+            for inp in node.input:
+                for n2 in model.graph.node:
+                    if n2.output and inp == n2.output[0] and n2.op_type == "Sigmoid":
+                        sig_in = inp
+            if sig_in:
+                # Ersetze Mul durch Relu
+                node.op_type = "Relu"
+                # Nimm den anderen Input (das "x" aus x*sigmoid(x))
+                other_in = [i for i in node.input if i != sig_in][0]
+                node.input[:] = [other_in]
+                replaced += 1
+    if replaced > 0:
+        onnx.save(model, output_path or onnx_path)
+        print(f"[INFO] Ersetzte {replaced} Swish/SiLU durch ReLU im ONNX-Modell.")
+    else:
+        print("[INFO] Keine Swish/SiLU-Knoten im ONNX-Modell gefunden.")
+
 def quantize_yolov8(
     onnx_model_path: str,
     calib_dir: str,
@@ -125,19 +162,19 @@ def quantize_yolov8(
         quant_setting.dispatching_table.append("/model.1/conv/Conv", get_target_platform(target, 16))
     """
     
+    # Swish/SiLU durch ReLU ersetzen (ONNX wird überschrieben)
+    replace_swish_with_relu(onnx_model_path)
+
     # Perform quantization
     print("\nStarting quantization process...")
     print("This may take several minutes...\n")
-    
     try:
         import torch
-        
         # Create collate function
         def collate_fn(batch):
             if isinstance(batch, np.ndarray):
                 return torch.from_numpy(batch).float()
             return batch
-        
         espdl_quantize_onnx(
             onnx_import_file=onnx_model_path,
             espdl_export_file=os.path.join(output_dir, "yolov8_bumblebee_quantized.espdl"),
@@ -151,7 +188,6 @@ def quantize_yolov8(
             # Export test values disabled due to large array printing issue
             export_test_values=False
         )
-        
         print("\n" + "="*60)
         print("✓ Quantization completed successfully!")
         print("="*60)
@@ -163,7 +199,6 @@ def quantize_yolov8(
         print("1. Copy the .espdl file to your ESP32 project")
         print("2. Use ESP-DL to load and run the model")
         print("3. Check the .info file for model structure and test values")
-        
     except Exception as e:
         print(f"\n❌ Quantization failed: {e}")
         print("\nTroubleshooting:")
