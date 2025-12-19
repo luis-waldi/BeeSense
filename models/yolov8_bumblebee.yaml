@@ -2,5 +2,8 @@ path: ../data
 train: images/train
 val: images/val
 
+depth_multiple: 0.125
+width_multiple: 0.125
+
 names:
   0: bumblebee
