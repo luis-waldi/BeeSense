@@ -1,3 +1,20 @@
+import torch.nn as nn
+
+# Hilfsfunktion: Ersetze Swish/SiLU durch SiLU (oder ReLU, falls gewünscht)
+def replace_swish_with_silu(model):
+    for name, module in model.named_modules():
+        # Ersetze als Submodul (nur SiLU, Swish gibt es in torch nicht)
+        if isinstance(module, nn.SiLU):
+            parent = model
+            *path, last = name.split('.')
+            for p in path:
+                parent = getattr(parent, p)
+            setattr(parent, last, nn.SiLU())  # oder nn.ReLU()
+        # Ersetze als Attribut
+        if hasattr(module, 'act') and module.act is not None:
+            if module.act.__class__.__name__.lower() in ['silu', 'swish']:
+                module.act = nn.SiLU()  # oder nn.ReLU()
+    return model
 """
 Export YOLOv8 model to ONNX format compatible with ESP-DL
 Based on Espressif's ESP-DL YOLO11n deployment guide
@@ -39,7 +56,7 @@ class DetectESPDL(Detect):
 def export_yolov8_to_onnx(
     model_path: str,
     output_path: str = None,
-    img_size: tuple = (640, 480),
+    img_size: tuple = (96, 96),
     opset_version: int = 11,
     simplify: bool = True
 ):
@@ -55,12 +72,15 @@ def export_yolov8_to_onnx(
     """
     print(f"Loading YOLOv8 model from: {model_path}")
     model = YOLO(model_path)
-    
+
+    # Ersetze Swish/SiLU durch SiLU (oder ReLU)
+    print("Ersetze Swish/SiLU durch SiLU für ESP-DL Kompatibilität...")
+    model.model = replace_swish_with_silu(model.model)
+
     # Replace the Detect head with ESP-DL compatible version
     print("Replacing Detect head with ESP-DL compatible version...")
     for module in model.model.modules():
         if isinstance(module, Detect):
-            # Store original parameters
             module.__class__ = DetectESPDL
             print(f"✓ Replaced Detect head - Channels: {module.nc}, Reg_max: {module.reg_max}")
     
@@ -109,8 +129,8 @@ if __name__ == "__main__":
         '--img-size',
         nargs=2,
         type=int,
-        default=[640, 480],
-        help='Input image size as width height (default: 640 480)'
+        default=[96, 96],
+        help='Input image size als Breite Höhe (Standard: 96 96)'
     )
     parser.add_argument(
         '--opset',
