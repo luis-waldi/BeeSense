@@ -31,9 +31,8 @@
 extern const uint8_t example_jpg_start[] asm("_binary_example_jpg_start");
 extern const uint8_t example_jpg_end[] asm("_binary_example_jpg_end");
 
-// Passe Modellpfad an dein quantisiertes Hummelmodell an
-extern const uint8_t espdl_model[] asm("_binary_yolov8_bumblebee_quantized_espdl_start");
-static const char *model_path = (const char *)espdl_model;
+// Modellpfad auf SD-Karte
+static const char *model_path = "/sdcard/models/yolov8_bumblebee_quantized.espdl";
 
 
 
@@ -123,35 +122,37 @@ static esp_err_t init_camera(void) {
     return err;
 }
 
-static bool capture_image(dl::image::img_t &output_img) {
-    ESP_LOGI("CAM", "Taking picture...");
-    camera_fb_t *pic = esp_camera_fb_get();
-    if (!pic) {
-        ESP_LOGE("CAM", "Failed to capture image");
+
+// Hilfsfunktion: JPEG von SD-Karte laden und dekodieren
+static bool load_jpeg_from_sd(const char *filepath, dl::image::img_t &output_img) {
+    FILE *f = fopen(filepath, "rb");
+    if (!f) {
+        ESP_LOGE("SD", "Konnte Datei %s nicht öffnen", filepath);
         return false;
     }
-
-    // Use pic->buf to access the image
-    ESP_LOGI("CAM", "Picture taken! Its size was: %zu bytes", pic->len);
-    ESP_LOGW("image_dim", "Height: %d, Width: %d, Len: %zu", pic->height, pic->width, pic->len);
-
-    // Allocate memory and copy the image data before returning the frame buffer
-    output_img.height = pic->height;
-    output_img.width = pic->width;
-    output_img.pix_type = dl::image::DL_IMAGE_PIX_TYPE_RGB565;
-
-    // Allocate memory for the image data
-    output_img.data = malloc(pic->len);
-    if (!output_img.data) {
-        ESP_LOGE("MEM", "Memory allocation failed");
-        esp_camera_fb_return(pic);
+    fseek(f, 0, SEEK_END);
+    size_t filesize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    uint8_t *jpg_buf = (uint8_t *)malloc(filesize);
+    if (!jpg_buf) {
+        ESP_LOGE("MEM", "Kein RAM für JPEG-Buffer");
+        fclose(f);
         return false;
     }
+    fread(jpg_buf, 1, filesize, f);
+    fclose(f);
 
-    // Copy the image data
-    memcpy(output_img.data, pic->buf, pic->len);
+    dl::image::jpeg_img_t jpeg_img;
+    jpeg_img.data = jpg_buf;
+    jpeg_img.data_size = filesize;
+    // width/height werden von sw_decode_jpeg gesetzt
 
-    esp_camera_fb_return(pic);
+    esp_err_t err = dl::image::sw_decode_jpeg(jpeg_img, output_img);
+    free(jpg_buf);
+    if (err != ESP_OK) {
+        ESP_LOGE("JPEG", "JPEG-Dekodierung fehlgeschlagen");
+        return false;
+    }
     return true;
 }
 
@@ -164,26 +165,19 @@ extern "C" void app_main(void) {
         return;
     }
 
-    if (ESP_OK != init_camera()) {
-        ESP_LOGE("APP", "Camera initialization failed");
+    // Kamera wird nicht benötigt
+    const char *test_img_path = "/sdcard/test/test.jpg";
+    ESP_LOGI("APP", "Lade Testbild: %s", test_img_path);
+
+    dl::image::img_t img;
+    if (!load_jpeg_from_sd(test_img_path, img)) {
+        ESP_LOGE("APP", "Konnte Testbild nicht laden oder dekodieren");
         return;
     }
-    
-    const char *out_dir = "/sdcard/classification";
-    sdcard::create_dir(out_dir);
 
-    while (true) {
-        ESP_LOGI("MEM", "Free heap at start of loop: %lu bytes", esp_get_free_heap_size());
-
-        dl::image::img_t img;
-        if (!capture_image(img)) {
-            ESP_LOGE("CAM", "Could not take picture");
-            vTaskDelay(pdMS_TO_TICKS(2000));
-            return;
-        }
-
-        // Convert RGB565 (camera) → RGB888 (needed for inference)
-        dl::image::img_t rgb888_img;
+    // Falls das Bild nicht RGB888 ist, konvertieren
+    dl::image::img_t rgb888_img;
+    if (img.pix_type != dl::image::DL_IMAGE_PIX_TYPE_RGB888) {
         rgb888_img.height = img.height;
         rgb888_img.width = img.width;
         rgb888_img.pix_type = dl::image::DL_IMAGE_PIX_TYPE_RGB888;
@@ -191,36 +185,29 @@ extern "C" void app_main(void) {
         if (!rgb888_img.data) {
             ESP_LOGE("MEM", "Failed to allocate RGB888 buffer");
             free(img.data);
-            continue;
+            return;
         }
-
         dl::image::convert_img(img, rgb888_img, 0, nullptr, {});
-
-        // Free camera frame buffer
         free(img.data);
-
-
-        // --- Detection-Inferenz ---
-        auto results = run_detection(rgb888_img);
-        bool found_bumblebee = false;
-        for (const auto &det : results) {
-            // Annahme: Klasse 0 = background, Klasse 1 = bumblebee
-            if (det.category == 1 && det.score > 0.3f) {
-                ESP_LOGI("DETECT", "Hummel erkannt! Score: %.2f, Box: [%d,%d,%d,%d]", det.score, det.box[0], det.box[1], det.box[2], det.box[3]);
-                found_bumblebee = true;
-            }
-        }
-        if (!found_bumblebee) {
-            ESP_LOGI("DETECT", "Keine Hummel erkannt.");
-        }
-
-        // Optional: Bild speichern, falls gewünscht
-        // if (!sdcard::save_classified_jpeg(rgb888_img, best, out_dir)) {
-        //     ESP_LOGE("SD", "Failed to save classified JPEG");
-        // }
-
-        free(rgb888_img.data);
-
-        vTaskDelay(pdMS_TO_TICKS(1000)); // 1 Sekunde warten
+    } else {
+        rgb888_img = img;
     }
+
+    // --- Detection-Inferenz ---
+    auto results = run_detection(rgb888_img);
+    bool found_bumblebee = false;
+    for (const auto &det : results) {
+        // Annahme: Klasse 0 = background, Klasse 1 = bumblebee
+        if (det.category == 1 && det.score > 0.3f) {
+            ESP_LOGI("DETECT", "Hummel erkannt! Score: %.2f, Box: [%d,%d,%d,%d]", det.score, det.box[0], det.box[1], det.box[2], det.box[3]);
+            found_bumblebee = true;
+        }
+    }
+    if (!found_bumblebee) {
+        ESP_LOGI("DETECT", "Keine Hummel erkannt.");
+    }
+
+    free(rgb888_img.data);
+    // Keine Endlosschleife, nur ein Bild
+    while (1) { vTaskDelay(pdMS_TO_TICKS(10000)); }
 }
