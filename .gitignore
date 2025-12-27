@@ -27,10 +27,7 @@ wheels/
 .ipynb_checkpoints
 
 # YOLOv8 / Ultralytics
-models/runs/
-models/*.pt
-*.pt
-*.onnx
+models/calib_data/
 *.engine
 *.weights
 *.cache
