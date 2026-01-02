@@ -7,7 +7,7 @@ model = YOLO('yolo11n.pt')
 model.train(
     data='yolov11_bumblebee.yaml',
     imgsz=224,
-    epochs=100,
+    epochs=500,
     batch=16,
     cache=True
 )

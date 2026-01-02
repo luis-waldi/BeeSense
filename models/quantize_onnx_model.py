@@ -55,8 +55,9 @@ def quant_espdet(onnx_path, target, num_of_bits, device, batchsz, imgsz, calib_d
     onnx.save(onnx.shape_inference.infer_shapes(model), onnx_path)
 
     calibration_dataset = CaliDataset(calib_dir, img_shape=imgsz)
+    # Batchgröße auf 1 setzen, um Reshape-Fehler zu vermeiden
     dataloader = DataLoader(
-        dataset=calibration_dataset, batch_size=batchsz, shuffle=False
+        dataset=calibration_dataset, batch_size=1, shuffle=False
     )
 
     def collate_fn(batch: torch.Tensor) -> torch.Tensor:
@@ -99,7 +100,7 @@ if __name__ == "__main__":
         target="esp32s3",
         num_of_bits=8,
         device='cpu',
-        batchsz=32,
+        batchsz=1,  # Batchgröße auf 1 setzen
         imgsz=224,
         calib_dir="calib_data",
         espdl_model_path="quantized_model/espdet_pico_224_224_bumblebee.espdl",
