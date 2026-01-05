@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BeeSense</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Leaflet (Karte) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+</head>
+
+<body>
+  <!-- Firmenlogo (rechts oben) -->
+  <div class="header-logo header-logo-right">
+    <img src="assets/LogoBiene.png" alt="Insecta Systems Logo">
+  </div>
+
+  <h1>BeeSense</h1>
+  <div class="subtitle">Dein smarter Bienenstock</div>
+
+  <!-- Navigation / Reiter -->
+  <div class="nav">
+    <button class="nav-btn active" data-view="overview">Übersicht</button>
+    <button class="nav-btn" data-view="flights">Flüge</button>
+    <button class="nav-btn" data-view="temperature">Temperatur</button>
+    <button class="nav-btn" data-view="humidity">Feuchtigkeit</button>
+    <button class="nav-btn" data-view="location">Standort</button>
+    <button class="nav-btn" data-view="settings">Einstellungen</button>
+  </div>
+
+  <!-- Ansicht: Übersicht -->
+  <div id="view-overview" class="view active">
+    <div class="grid">
+      <div class="card card-flight">
+        <h2>Flüge heute</h2>
+        <div class="value-row">
+          <div id="flights" class="value">0</div>
+          <div class="unit">Flüge</div>
+        </div>
+        <div class="small" id="flights-info">Zählung</div>
+      </div>
+
+      <div class="card card-temp">
+        <h2>Temperatur</h2>
+        <div class="value-row">
+          <div id="temperature" class="value">--</div>
+          <div class="unit">°C</div>
+        </div>
+        <div class="small" id="temp-status">–</div>
+      </div>
+
+      <div class="card card-humidity">
+        <h2>Luftfeuchtigkeit</h2>
+        <div class="value-row">
+          <div id="humidity" class="value">--</div>
+          <div class="unit">%</div>
+        </div>
+        <div class="small" id="hum-status">–</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ansicht: Flüge -->
+  <div id="view-flights" class="view">
+    <div class="flights-layout">
+      <div class="card card-flight">
+        <h2>Flüge heute</h2>
+        <div class="value-row">
+          <div id="flights-detail" class="value">0</div>
+          <div class="unit">Flüge</div>
+        </div>
+        <div class="small">Heutige Flüge</div>
+      </div>
+
+      <div class="card card-flight">
+        <h2>Flüge der letzten 7 Tage</h2>
+        <div class="chart-container">
+          <canvas id="flightsChart"></canvas>
+        </div>
+        <div class="small">Flugdaten der letzten 7 Tage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ansicht: Temperatur -->
+  <div id="view-temperature" class="view">
+    <div class="flights-layout">
+      <div class="card card-temp">
+        <h2>Aktuelle Temperatur</h2>
+        <div class="value-row">
+          <div id="temperature-detail" class="value">--</div>
+          <div class="unit">°C</div>
+        </div>
+        <div class="small">Momentane Temperatur im Hummelstock</div>
+      </div>
+
+      <div class="card card-temp">
+        <h2>Temperatur der letzten 7 Tage (Ø)</h2>
+        <div class="chart-container">
+          <canvas id="tempChart"></canvas>
+        </div>
+        <div class="small">Durchschnittliche Temperatur pro Tag für die letzten 7 Tage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ansicht: Feuchtigkeit -->
+  <div id="view-humidity" class="view">
+    <div class="flights-layout">
+      <div class="card card-humidity">
+        <h2>Aktuelle Luftfeuchtigkeit</h2>
+        <div class="value-row">
+          <div id="humidity-detail" class="value">--</div>
+          <div class="unit">%</div>
+        </div>
+        <div class="small" id="hum-status-detail">–</div>
+      </div>
+
+      <div class="card card-humidity">
+        <h2>Luftfeuchtigkeit der letzten 7 Tage (Ø)</h2>
+        <div class="chart-container">
+          <canvas id="humChart"></canvas>
+        </div>
+        <div class="small">Durchschnittliche Luftfeuchtigkeit pro Tag für die letzten 7 Tage</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ansicht: Standort -->
+  <div id="view-location" class="view">
+    <div class="card card-location">
+      <h2>Standorte der Stöcke</h2>
+
+      <div class="location-layout">
+        <!-- linke Seite -->
+        <div>
+          <p class="location-coords">
+            Hier kann der Imker bis zu <strong>5 Stöcke</strong> (Name + Koordinaten) speichern und auf der Karte anzeigen lassen.
+          </p>
+
+          <form class="location-form" onsubmit="return false;">
+            <label>
+              Name (z.B. Bienenstock1):<br />
+              <input type="text" id="input-name" placeholder="z.B. Bienenstock1" maxlength="30" />
+            </label>
+
+            <label>
+              Breite (Lat):<br />
+              <input type="number" step="0.0001" id="input-lat" placeholder="z.B. 52.5200" />
+            </label>
+
+            <label>
+              Länge (Lng):<br />
+              <input type="number" step="0.0001" id="input-lng" placeholder="z.B. 13.4050" />
+            </label>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button id="btn-save-stock" type="button">Speichern</button>
+              <button id="btn-show-current" type="button">Anzeigen</button>
+              <button id="btn-clear-stocks" type="button">Alle löschen</button>
+            </div>
+
+            <div class="small" id="stock-msg" style="margin-top:6px;">–</div>
+          </form>
+
+          <h3 style="margin-top:14px; margin-bottom:6px;">Gespeicherte Stöcke</h3>
+          <div id="stocks-list" class="stocks-list"></div>
+        </div>
+
+        <!-- rechte Seite: Karte -->
+        <div>
+          <div id="map" class="map-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ansicht: Einstellungen -->
+  <div id="view-settings" class="view">
+    <div class="card card-settings">
+      <h2>Einstellungen</h2>
+      <p class="placeholder">
+        Hier kannst du zukünftig Parameter, Warnschwellen, Sensoroptionen usw. einstellen.
+      </p>
+
+      <div class="small" style="margin-top: 10px;">Darstellung:</div>
+      <button id="theme-toggle" class="theme-toggle">Dunkles Design</button>
+    </div>
+  </div>
+
+  <script>
+    // ---------------------------------------
+    // Navigation / Reiter
+    // ---------------------------------------
+    const navButtons = document.querySelectorAll(".nav-btn");
+    const views = {
+      overview: document.getElementById("view-overview"),
+      flights: document.getElementById("view-flights"),
+      temperature: document.getElementById("view-temperature"),
+      humidity: document.getElementById("view-humidity"),
+      location: document.getElementById("view-location"),
+      settings: document.getElementById("view-settings"),
+    };
+
+    let map = null;
+
+    navButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.view;
+
+        navButtons.forEach(b => b.classList.toggle("active", b === btn));
+        Object.entries(views).forEach(([name, el]) => {
+          el.classList.toggle("active", name === target);
+        });
+
+        if (target === "location" && map) {
+          setTimeout(() => map.invalidateSize(), 100);
+        }
+      });
+    });
+
+    // ---------------------------------------
+    // Theme Toggle (Hell/Dunkel) in Einstellungen
+    // ---------------------------------------
+    const themeToggleBtn = document.getElementById("theme-toggle");
+
+    function applyTheme(theme) {
+      if (theme === "dark") {
+        document.body.classList.add("theme-dark");
+        if (themeToggleBtn) themeToggleBtn.textContent = "Helles Design";
+      } else {
+        document.body.classList.remove("theme-dark");
+        if (themeToggleBtn) themeToggleBtn.textContent = "Dunkles Design";
+      }
+      localStorage.setItem("beeTheme", theme);
+    }
+
+    const savedTheme = localStorage.getItem("beeTheme") || "light";
+    applyTheme(savedTheme);
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        const isDark = document.body.classList.contains("theme-dark");
+        applyTheme(isDark ? "light" : "dark");
+      });
+    }
+
+    // ---------------------------------------
+    // Simulationsdaten (heute)
+    // ---------------------------------------
+    let flights = 0;
+    let temp = 24.0;
+    let hum = 60.0;
+
+    // ---------------------------------------
+    // Historische Daten für 7 Tage (ohne heute)
+    // ---------------------------------------
+    let labelsLast7 = [];
+    let flightsLast7 = [];
+    let tempLast7 = [];
+    let humLast7 = [];
+
+    for (let i = 7; i >= 1; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+
+      labelsLast7.push(
+        d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })
+      );
+
+      flightsLast7.push(80 + Math.floor(Math.random() * 100));
+      tempLast7.push(22 + Math.random() * 8);
+      humLast7.push(50 + Math.random() * 30);
+    }
+
+    // ---------------------------------------
+    // Diagramm Flüge (Balken)
+    // ---------------------------------------
+    const ctxFlights = document.getElementById("flightsChart").getContext("2d");
+    const flightsChart = new Chart(ctxFlights, {
+      type: "bar",
+      data: {
+        labels: labelsLast7,
+        datasets: [
+          { label: "Flüge pro Tag", data: flightsLast7 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 20 } },
+        },
+      },
+    });
+
+    // ---------------------------------------
+    // Diagramm Temperatur (Linie)
+    // ---------------------------------------
+    const ctxTemp = document.getElementById("tempChart").getContext("2d");
+    const tempChart = new Chart(ctxTemp, {
+      type: "line",
+      data: {
+        labels: labelsLast7,
+        datasets: [
+          {
+            label: "Ø Temperatur pro Tag (°C)",
+            data: tempLast7,
+            tension: 0.3,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: false },
+        },
+      },
+    });
+
+    // ---------------------------------------
+    // Diagramm Luftfeuchtigkeit (Linie)
+    // ---------------------------------------
+    const ctxHum = document.getElementById("humChart").getContext("2d");
+    const humChart = new Chart(ctxHum, {
+      type: "line",
+      data: {
+        labels: labelsLast7,
+        datasets: [
+          {
+            label: "Ø Luftfeuchtigkeit pro Tag (%)",
+            data: humLast7,
+            tension: 0.3,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: false,
+            suggestedMin: 30,
+            suggestedMax: 90,
+          },
+        },
+      },
+    });
+
+    // ---------------------------------------
+    // Leaflet-Karte & Stock-Verwaltung (bis zu 5)
+    // ---------------------------------------
+    const STOCKS_KEY = "beeStocks_v1";
+    const MAX_STOCKS = 5;
+
+    const nameInput = document.getElementById("input-name");
+    const latInputEl = document.getElementById("input-lat");
+    const lngInputEl = document.getElementById("input-lng");
+    const msgEl = document.getElementById("stock-msg");
+    const listEl = document.getElementById("stocks-list");
+
+    function setMsg(text) {
+      if (msgEl) msgEl.innerText = text;
+    }
+
+    function loadStocks() {
+      try {
+        const raw = localStorage.getItem(STOCKS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveStocks(stocks) {
+      localStorage.setItem(STOCKS_KEY, JSON.stringify(stocks));
+    }
+
+    function normalizeName(name) {
+      return (name || "").trim().replace(/\s+/g, " ");
+    }
+
+    function isValidLatLng(lat, lng) {
+      return Number.isFinite(lat) && Number.isFinite(lng) &&
+        lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+    }
+
+    function upsertStock(stock) {
+      const stocks = loadStocks();
+      const idx = stocks.findIndex(s => s.name.toLowerCase() === stock.name.toLowerCase());
+
+      if (idx >= 0) {
+        stocks[idx] = stock;
+        saveStocks(stocks);
+        return { ok: true, msg: `„${stock.name}“ aktualisiert.` };
+      }
+
+      if (stocks.length >= MAX_STOCKS) {
+        return { ok: false, msg: `Maximal ${MAX_STOCKS} Stöcke erlaubt. Bitte erst einen löschen.` };
+      }
+
+      stocks.push(stock);
+      saveStocks(stocks);
+      return { ok: true, msg: `„${stock.name}“ gespeichert.` };
+    }
+
+    function deleteStockByName(name) {
+      const stocks = loadStocks().filter(s => s.name.toLowerCase() !== name.toLowerCase());
+      saveStocks(stocks);
+    }
+
+    function clearAllStocks() {
+      localStorage.removeItem(STOCKS_KEY);
+    }
+
+    // Karte initialisieren
+    const initialStocks = loadStocks();
+    let currentLat = initialStocks[0]?.lat ?? 52.5200;
+    let currentLng = initialStocks[0]?.lng ?? 13.4050;
+
+    map = L.map("map").setView([currentLat, currentLng], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap-Mitwirkende"
+    }).addTo(map);
+
+    const marker = L.marker([currentLat, currentLng])
+      .addTo(map)
+      .bindPopup("Stock-Standort")
+      .openPopup();
+
+    function showOnMap(lat, lng, popupText = "Stock-Standort") {
+      map.setView([lat, lng], 13);
+      marker.setLatLng([lat, lng]);
+      marker.bindPopup(popupText).openPopup();
+    }
+
+    function renderStocks() {
+      const stocks = loadStocks();
+      if (!listEl) return;
+
+      if (stocks.length === 0) {
+        listEl.innerHTML = `<div class="small">Noch keine Stöcke gespeichert.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = "";
+
+      stocks.forEach(stock => {
+        const item = document.createElement("div");
+        item.className = "stock-item";
+
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="stock-name">${stock.name}</div>
+          <div class="stock-meta">${stock.lat.toFixed(4)}, ${stock.lng.toFixed(4)}</div>
+        `;
+
+        const actions = document.createElement("div");
+        actions.className = "stock-actions";
+
+        const btnShow = document.createElement("button");
+        btnShow.className = "btn-show";
+        btnShow.type = "button";
+        btnShow.innerText = "Anzeigen";
+        btnShow.addEventListener("click", () => {
+          showOnMap(stock.lat, stock.lng, stock.name);
+
+          if (nameInput) nameInput.value = stock.name;
+          if (latInputEl) latInputEl.value = stock.lat.toFixed(4);
+          if (lngInputEl) lngInputEl.value = stock.lng.toFixed(4);
+
+          setMsg(`„${stock.name}“ auf Karte angezeigt.`);
+        });
+
+        const btnDel = document.createElement("button");
+        btnDel.className = "btn-delete";
+        btnDel.type = "button";
+        btnDel.innerText = "Löschen";
+        btnDel.addEventListener("click", () => {
+          deleteStockByName(stock.name);
+          renderStocks();
+          setMsg(`„${stock.name}“ gelöscht.`);
+        });
+
+        actions.appendChild(btnShow);
+        actions.appendChild(btnDel);
+
+        item.appendChild(left);
+        item.appendChild(actions);
+        listEl.appendChild(item);
+      });
+    }
+
+    document.getElementById("btn-save-stock")?.addEventListener("click", () => {
+      const name = normalizeName(nameInput?.value);
+      const lat = parseFloat(latInputEl?.value);
+      const lng = parseFloat(lngInputEl?.value);
+
+      if (!name) {
+        setMsg("Bitte einen Namen eingeben (z.B. Bienenstock1).");
+        return;
+      }
+      if (!isValidLatLng(lat, lng)) {
+        setMsg("Bitte gültige Koordinaten eingeben (Lat: -90..90, Lng: -180..180).");
+        return;
+      }
+
+      const result = upsertStock({ name, lat, lng, updatedAt: Date.now() });
+      setMsg(result.msg);
+
+      if (result.ok) {
+        renderStocks();
+        showOnMap(lat, lng, name);
+      }
+    });
+
+    document.getElementById("btn-show-current")?.addEventListener("click", () => {
+      const name = normalizeName(nameInput?.value) || "Stock-Standort";
+      const lat = parseFloat(latInputEl?.value);
+      const lng = parseFloat(lngInputEl?.value);
+
+      if (!isValidLatLng(lat, lng)) {
+        setMsg("Bitte gültige Koordinaten eingeben, um den Standort anzuzeigen.");
+        return;
+      }
+
+      showOnMap(lat, lng, name);
+      setMsg(`„${name}“ auf Karte angezeigt (nicht gespeichert).`);
+    });
+
+    document.getElementById("btn-clear-stocks")?.addEventListener("click", () => {
+      clearAllStocks();
+      renderStocks();
+      setMsg("Alle gespeicherten Stöcke wurden gelöscht.");
+    });
+
+    renderStocks();
+    setMsg("–");
+
+    // ---------------------------------------
+    // UI updaten (Simulation der aktuellen Werte)
+    // ---------------------------------------
+    function updateSimulatedData() {
+      flights += Math.floor(Math.random() * 4);
+      temp += (Math.random() - 0.5) * 0.4;
+      hum += (Math.random() - 0.5) * 1.0;
+
+      if (temp < 15) temp = 15;
+      if (temp > 35) temp = 35;
+      if (hum < 30) hum = 30;
+      if (hum > 90) hum = 90;
+
+      // Übersicht
+      document.getElementById("flights").innerText = flights;
+      document.getElementById("temperature").innerText = temp.toFixed(1);
+      document.getElementById("humidity").innerText = hum.toFixed(1);
+
+      // Detailseiten
+      document.getElementById("flights-detail").innerText = flights;
+      document.getElementById("temperature-detail").innerText = temp.toFixed(1);
+
+      const humidityDetail = document.getElementById("humidity-detail");
+      if (humidityDetail) humidityDetail.innerText = hum.toFixed(1);
+
+      // Status Temperatur
+      const tempStatus = document.getElementById("temp-status");
+      if (temp >= 24 && temp <= 32) {
+        tempStatus.innerText = "Temperatur im guten Bereich";
+        tempStatus.className = "small status-ok";
+      } else {
+        tempStatus.innerText = "Temperatur außerhalb Optimalbereich";
+        tempStatus.className = "small status-warn";
+      }
+
+      // Status Luftfeuchtigkeit
+      const humStatus = document.getElementById("hum-status");
+      if (hum >= 50 && hum <= 80) {
+        humStatus.innerText = "Luftfeuchtigkeit im guten Bereich";
+        humStatus.className = "small status-ok";
+      } else {
+        humStatus.innerText = "Luftfeuchtigkeit außerhalb Optimalbereich";
+        humStatus.className = "small status-warn";
+      }
+
+      // Status in Detailseite übernehmen
+      const humStatusDetailEl = document.getElementById("hum-status-detail");
+      if (humStatus && humStatusDetailEl) {
+        humStatusDetailEl.innerText = humStatus.innerText;
+        humStatusDetailEl.className = humStatus.className;
+      }
+    }
+
+    setInterval(updateSimulatedData, 2000);
+    updateSimulatedData();
+  </script>
+</body>
+</html>
