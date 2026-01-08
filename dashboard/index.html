@@ -48,12 +48,30 @@
   <div id="view-overview" class="view active">
     <div class="grid">
       <div class="card card-flight">
-        <h2>Flüge heute</h2>
+        <h2>Einflüge</h2>
+        <div class="value-row">
+          <div id="einflug" class="value">0</div>
+          <div class="unit">🐝 →</div>
+        </div>
+        <div class="small" id="einflug-info">Hummeln rein</div>
+      </div>
+
+      <div class="card card-flight">
+        <h2>Ausflüge</h2>
+        <div class="value-row">
+          <div id="ausflug" class="value">0</div>
+          <div class="unit">← 🐝</div>
+        </div>
+        <div class="small" id="ausflug-info">Hummeln raus</div>
+      </div>
+
+      <div class="card card-flight">
+        <h2>Gesamt heute</h2>
         <div class="value-row">
           <div id="flights" class="value">0</div>
           <div class="unit">Flüge</div>
         </div>
-        <div class="small" id="flights-info">Zählung</div>
+        <div class="small" id="flights-info">Einflüge + Ausflüge</div>
       </div>
 
       <div class="card card-temp">
@@ -80,12 +98,22 @@
   <div id="view-flights" class="view">
     <div class="flights-layout">
       <div class="card card-flight">
-        <h2>Flüge heute</h2>
+        <h2>Einflüge / Ausflüge heute</h2>
         <div class="value-row">
-          <div id="flights-detail" class="value">0</div>
-          <div class="unit">Flüge</div>
+          <div id="einflug-detail" class="value">0</div>
+          <div class="unit" style="margin-right: 20px;">🐝 →</div>
+          <div id="ausflug-detail" class="value">0</div>
+          <div class="unit">← 🐝</div>
         </div>
-        <div class="small">Heutige Flüge</div>
+        <div class="small">Einflüge / Ausflüge</div>
+      </div>
+
+      <div class="card card-flight">
+        <h2>Verbindungsstatus</h2>
+        <div class="value-row">
+          <div id="connection-status" class="value" style="font-size: 1.2rem;">⏳</div>
+        </div>
+        <div class="small" id="last-update">Warte auf Daten...</div>
       </div>
 
       <div class="card card-flight">
@@ -260,13 +288,6 @@
         applyTheme(isDark ? "light" : "dark");
       });
     }
-
-    // ---------------------------------------
-    // Simulationsdaten (heute)
-    // ---------------------------------------
-    let flights = 0;
-    let temp = 24.0;
-    let hum = 60.0;
 
     // ---------------------------------------
     // Historische Daten für 7 Tage (ohne heute)
@@ -560,10 +581,98 @@
     setMsg("–");
 
     // ---------------------------------------
-    // UI updaten (Simulation der aktuellen Werte)
+    // ESP32 Live-Daten (Server-Sent Events)
     // ---------------------------------------
+    let einflug = 0;
+    let ausflug = 0;
+    let isConnected = false;
+
+    function updateUI(data) {
+      einflug = data.einflug || 0;
+      ausflug = data.ausflug || 0;
+      const total = einflug + ausflug;
+
+      // Übersicht
+      document.getElementById("einflug").innerText = einflug;
+      document.getElementById("ausflug").innerText = ausflug;
+      document.getElementById("flights").innerText = total;
+
+      // Detailseite
+      const einflugDetail = document.getElementById("einflug-detail");
+      const ausflugDetail = document.getElementById("ausflug-detail");
+      if (einflugDetail) einflugDetail.innerText = einflug;
+      if (ausflugDetail) ausflugDetail.innerText = ausflug;
+
+      // Letztes Update
+      if (data.lastUpdate) {
+        const time = new Date(data.lastUpdate).toLocaleTimeString("de-DE");
+        const lastUpdateEl = document.getElementById("last-update");
+        if (lastUpdateEl) lastUpdateEl.innerText = `Letztes Update: ${time}`;
+      }
+    }
+
+    function setConnectionStatus(connected) {
+      isConnected = connected;
+      const statusEl = document.getElementById("connection-status");
+      if (statusEl) {
+        statusEl.innerText = connected ? "✅ Verbunden" : "❌ Getrennt";
+        statusEl.style.color = connected ? "#22c55e" : "#ef4444";
+      }
+    }
+
+    function connectToServer() {
+      console.log("Verbinde mit Server...");
+      setConnectionStatus(false);
+
+      const evtSource = new EventSource("/api/events");
+
+      evtSource.onopen = () => {
+        console.log("SSE Verbindung hergestellt");
+        setConnectionStatus(true);
+      };
+
+      evtSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Daten empfangen:", data);
+          updateUI(data);
+          setConnectionStatus(true);
+        } catch (e) {
+          console.error("Fehler beim Parsen:", e);
+        }
+      };
+
+      evtSource.onerror = (err) => {
+        console.error("SSE Fehler:", err);
+        setConnectionStatus(false);
+        evtSource.close();
+        // Reconnect nach 3 Sekunden
+        setTimeout(connectToServer, 3000);
+      };
+    }
+
+    // Initiale Daten laden
+    fetch("/api/tracking")
+      .then(res => res.json())
+      .then(data => {
+        updateUI(data);
+        setConnectionStatus(true);
+      })
+      .catch(err => {
+        console.log("Server nicht erreichbar, verwende Simulation");
+        setConnectionStatus(false);
+      });
+
+    // Live-Verbindung starten
+    connectToServer();
+
+    // ---------------------------------------
+    // Simulierte Temperatur/Feuchtigkeit (noch kein Sensor)
+    // ---------------------------------------
+    let temp = 24.0;
+    let hum = 60.0;
+
     function updateSimulatedData() {
-      flights += Math.floor(Math.random() * 4);
       temp += (Math.random() - 0.5) * 0.4;
       hum += (Math.random() - 0.5) * 1.0;
 
@@ -572,13 +681,9 @@
       if (hum < 30) hum = 30;
       if (hum > 90) hum = 90;
 
-      // Übersicht
-      document.getElementById("flights").innerText = flights;
+      // Temperatur und Feuchtigkeit (noch simuliert)
       document.getElementById("temperature").innerText = temp.toFixed(1);
       document.getElementById("humidity").innerText = hum.toFixed(1);
-
-      // Detailseiten
-      document.getElementById("flights-detail").innerText = flights;
       document.getElementById("temperature-detail").innerText = temp.toFixed(1);
 
       const humidityDetail = document.getElementById("humidity-detail");
