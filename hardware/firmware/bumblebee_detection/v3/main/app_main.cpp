@@ -18,6 +18,12 @@
 #include "dl_image_draw.hpp"
 #include "dl_image_color.hpp"
 
+// WiFi Support
+#include "include/wifi_manager.h"
+
+// Intervall für das Senden der Daten ans Dashboard (in Millisekunden)
+#define WIFI_SEND_INTERVAL_MS 10000
+
 extern const uint8_t bumblebee_jpg_start[] asm("_binary_bumblebee_jpg_start");
 extern const uint8_t bumblebee_jpg_end[] asm("_binary_bumblebee_jpg_end");
 const char *TAG = "bumblebee_detect";
@@ -137,6 +143,19 @@ static bool capture_and_convert_image(dl::image::img_t &cropped_img) {
 
 extern "C" void app_main(void)
 {
+    // WiFi initialisieren und verbinden
+    ESP_LOGI(TAG, "Initialisiere WiFi...");
+    esp_err_t wifi_err = wifi_init_sta();
+    if (wifi_err == ESP_OK) {
+        // Warte max. 10 Sekunden auf Verbindung
+        wifi_err = wifi_wait_connected(10000);
+        if (wifi_err != ESP_OK) {
+            ESP_LOGW(TAG, "WiFi-Verbindung fehlgeschlagen, fahre ohne WiFi fort");
+        }
+    } else {
+        ESP_LOGW(TAG, "WiFi-Initialisierung fehlgeschlagen: %s", esp_err_to_name(wifi_err));
+    }
+
     ESP_LOGI("SD", "Mounting SD card...");
     bool mounted = sdcard::init();
     if (!mounted) {
@@ -159,6 +178,11 @@ extern "C" void app_main(void)
     const int y_line = 120; // Zähllinie
     // Für einfaches Tracking: Merke dir die y-Positionen der Hummeln aus dem letzten Frame
     std::vector<int> last_centers_y;
+    
+    // Timer für WiFi-Datenübertragung
+    uint32_t last_wifi_send_time = 0;
+    int last_sent_einflug = 0;
+    int last_sent_ausflug = 0;
 
     while (true) {
         ESP_LOGI("MEM", "Free heap at start of loop: %lu bytes", esp_get_free_heap_size());
@@ -229,6 +253,23 @@ extern "C" void app_main(void)
         last_centers_y = current_centers_y;
 
         ESP_LOGI(TAG, "Einflüge: %d, Ausflüge: %d", einflug_count, ausflug_count);
+
+        // Daten über WiFi senden (falls verbunden und Änderungen vorhanden)
+        uint32_t current_time = esp_log_timestamp();
+        if (wifi_is_connected()) {
+            // Sende Daten wenn sich etwas geändert hat oder das Intervall erreicht ist
+            bool data_changed = (einflug_count != last_sent_einflug) || (ausflug_count != last_sent_ausflug);
+            bool interval_reached = (current_time - last_wifi_send_time) >= WIFI_SEND_INTERVAL_MS;
+            
+            if (data_changed || interval_reached) {
+                esp_err_t send_err = wifi_send_tracking_data(einflug_count, ausflug_count);
+                if (send_err == ESP_OK) {
+                    last_wifi_send_time = current_time;
+                    last_sent_einflug = einflug_count;
+                    last_sent_ausflug = ausflug_count;
+                }
+            }
+        }
 
         // Bild mit BBoxen und Linie speichern (optional)
         dl::cls::result_t dummy_result = {};

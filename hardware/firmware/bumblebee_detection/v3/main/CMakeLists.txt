@@ -5,7 +5,12 @@ set(include_dirs    ./
                     ${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set(requires        bumblebee_detect)
+set(requires        bumblebee_detect
+                    esp_wifi
+                    esp_event
+                    esp_netif
+                    nvs_flash
+                    esp_http_client)
 
 if (IDF_TARGET STREQUAL "esp32s3")
     list(APPEND requires esp32_s3_eye_noglib
