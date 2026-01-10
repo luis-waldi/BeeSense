@@ -49,7 +49,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    const url = new URL(req.url, `http://localhost:${PORT}`);
+    const url = new URL(req.url, `http://${req.headers.host || `localhost:${PORT}`}`);
     
     // API: Tracking-Daten empfangen (POST vom ESP32)
     if (url.pathname === '/api/tracking' && req.method === 'POST') {

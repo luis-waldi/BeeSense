@@ -20,7 +20,7 @@ menu "BeeSense WiFi Configuration"
 
     config DASHBOARD_HOST
         string "Dashboard Server Host"
-        default "192.168.1.100"
+        default "3.75.94.127"
         help
             IP-Adresse oder Hostname des Dashboard-Servers.
 
