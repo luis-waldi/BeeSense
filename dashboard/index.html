@@ -305,9 +305,9 @@
         d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })
       );
 
-      flightsLast7.push(80 + Math.floor(Math.random() * 100));
-      tempLast7.push(22 + Math.random() * 8);
-      humLast7.push(50 + Math.random() * 30);
+      flightsLast7.push(0);
+      tempLast7.push(null);
+      humLast7.push(null);
     }
 
     // ---------------------------------------
@@ -386,6 +386,66 @@
         },
       },
     });
+
+    // ---------------------------------------
+    // Funktion zum Aktualisieren der Diagramme mit echten Daten
+    // ---------------------------------------
+    function updateChartsWithHistoricalData() {
+      fetch("/api/history")
+        .then(res => res.json())
+        .then(data => {
+          console.log("Historische Daten geladen:", data);
+          
+          // Flugdaten aktualisieren
+          if (data.flights && data.flights.length > 0) {
+            const flightLabels = [];
+            const flightData = [];
+            data.flights.forEach(day => {
+              const date = new Date(day.date);
+              flightLabels.push(date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }));
+              flightData.push(day.total);
+            });
+            flightsChart.data.labels = flightLabels;
+            flightsChart.data.datasets[0].data = flightData;
+            flightsChart.update();
+          }
+          
+          // Temperaturdaten aktualisieren
+          if (data.temperature && data.temperature.length > 0) {
+            const tempLabels = [];
+            const tempData = [];
+            data.temperature.forEach(day => {
+              const date = new Date(day.date);
+              tempLabels.push(date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }));
+              tempData.push(parseFloat(day.avg.toFixed(1)));
+            });
+            tempChart.data.labels = tempLabels;
+            tempChart.data.datasets[0].data = tempData;
+            tempChart.update();
+          }
+          
+          // Feuchtigkeitsdaten aktualisieren
+          if (data.humidity && data.humidity.length > 0) {
+            const humLabels = [];
+            const humData = [];
+            data.humidity.forEach(day => {
+              const date = new Date(day.date);
+              humLabels.push(date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }));
+              humData.push(parseFloat(day.avg.toFixed(1)));
+            });
+            humChart.data.labels = humLabels;
+            humChart.data.datasets[0].data = humData;
+            humChart.update();
+          }
+        })
+        .catch(err => {
+          console.log("Keine historischen Daten verfügbar", err);
+        });
+    }
+
+    // Initial laden und dann alle 30 Sekunden aktualisieren
+    updateChartsWithHistoricalData();
+    setInterval(updateChartsWithHistoricalData, 30000);
 
     // ---------------------------------------
     // Leaflet-Karte & Stock-Verwaltung (bis zu 5)
@@ -667,58 +727,69 @@
     connectToServer();
 
     // ---------------------------------------
-    // Simulierte Temperatur/Feuchtigkeit (noch kein Sensor)
+    // Temperatur/Feuchtigkeit von API
     // ---------------------------------------
-    let temp = 24.0;
-    let hum = 60.0;
+    function updateSensorData(sensorData) {
+      const temp = sensorData.temperature;
+      const hum = sensorData.humidity;
 
-    function updateSimulatedData() {
-      temp += (Math.random() - 0.5) * 0.4;
-      hum += (Math.random() - 0.5) * 1.0;
+      if (temp !== null && temp !== undefined) {
+        document.getElementById("temperature").innerText = temp.toFixed(1);
+        document.getElementById("temperature-detail").innerText = temp.toFixed(1);
 
-      if (temp < 15) temp = 15;
-      if (temp > 35) temp = 35;
-      if (hum < 30) hum = 30;
-      if (hum > 90) hum = 90;
-
-      // Temperatur und Feuchtigkeit (noch simuliert)
-      document.getElementById("temperature").innerText = temp.toFixed(1);
-      document.getElementById("humidity").innerText = hum.toFixed(1);
-      document.getElementById("temperature-detail").innerText = temp.toFixed(1);
-
-      const humidityDetail = document.getElementById("humidity-detail");
-      if (humidityDetail) humidityDetail.innerText = hum.toFixed(1);
-
-      // Status Temperatur
-      const tempStatus = document.getElementById("temp-status");
-      if (temp >= 24 && temp <= 32) {
-        tempStatus.innerText = "Temperatur im guten Bereich";
-        tempStatus.className = "small status-ok";
-      } else {
-        tempStatus.innerText = "Temperatur außerhalb Optimalbereich";
-        tempStatus.className = "small status-warn";
+        // Status Temperatur
+        const tempStatus = document.getElementById("temp-status");
+        if (temp >= 24 && temp <= 32) {
+          tempStatus.innerText = "Temperatur im guten Bereich";
+          tempStatus.className = "small status-ok";
+        } else {
+          tempStatus.innerText = "Temperatur außerhalb Optimalbereich";
+          tempStatus.className = "small status-warn";
+        }
       }
 
-      // Status Luftfeuchtigkeit
-      const humStatus = document.getElementById("hum-status");
-      if (hum >= 50 && hum <= 80) {
-        humStatus.innerText = "Luftfeuchtigkeit im guten Bereich";
-        humStatus.className = "small status-ok";
-      } else {
-        humStatus.innerText = "Luftfeuchtigkeit außerhalb Optimalbereich";
-        humStatus.className = "small status-warn";
-      }
+      if (hum !== null && hum !== undefined) {
+        document.getElementById("humidity").innerText = hum.toFixed(1);
+        const humidityDetail = document.getElementById("humidity-detail");
+        if (humidityDetail) humidityDetail.innerText = hum.toFixed(1);
 
-      // Status in Detailseite übernehmen
-      const humStatusDetailEl = document.getElementById("hum-status-detail");
-      if (humStatus && humStatusDetailEl) {
-        humStatusDetailEl.innerText = humStatus.innerText;
-        humStatusDetailEl.className = humStatus.className;
+        // Status Luftfeuchtigkeit
+        const humStatus = document.getElementById("hum-status");
+        if (hum >= 50 && hum <= 80) {
+          humStatus.innerText = "Luftfeuchtigkeit im guten Bereich";
+          humStatus.className = "small status-ok";
+        } else {
+          humStatus.innerText = "Luftfeuchtigkeit außerhalb Optimalbereich";
+          humStatus.className = "small status-warn";
+        }
+
+        // Status in Detailseite übernehmen
+        const humStatusDetailEl = document.getElementById("hum-status-detail");
+        if (humStatus && humStatusDetailEl) {
+          humStatusDetailEl.innerText = humStatus.innerText;
+          humStatusDetailEl.className = humStatus.className;
+        }
       }
     }
 
-    setInterval(updateSimulatedData, 2000);
-    updateSimulatedData();
+    // Sensor-Daten initial laden
+    fetch("/api/sensors")
+      .then(res => res.json())
+      .then(data => {
+        console.log("Sensor-Daten geladen:", data);
+        updateSensorData(data);
+      })
+      .catch(err => {
+        console.log("Keine Sensor-Daten verfügbar");
+      });
+
+    // Sensor-Daten regelmäßig aktualisieren
+    setInterval(() => {
+      fetch("/api/sensors")
+        .then(res => res.json())
+        .then(data => updateSensorData(data))
+        .catch(err => console.log("Fehler beim Laden der Sensor-Daten"));
+    }, 5000);
   </script>
 </body>
 </html>
